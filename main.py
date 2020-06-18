@@ -4,13 +4,13 @@
 import pygame
 import random
 
-# initialize display
+# Initialize game display
 pygame.init()
 screensize = screenwidth, screenheight = 640, 480
 screen = pygame.display.set_mode(screensize)
 
 
-# function used to display text onto game screen
+# Function used to display text onto the game screen
 # modified from the example on the following website: https://pythonprogramming.net/displaying-text-pygame-screen/
 def write(text, size, colour, xpos, ypos):
     font = pygame.font.SysFont("consolas", size)
@@ -18,7 +18,7 @@ def write(text, size, colour, xpos, ypos):
     screen.blit(texttoscreen, (xpos, ypos))
 
 
-# function to update the game screen - all drawing except for obstacle
+# Function to update the game screen - Includes all drawing except for obstacle drawing
 def redrawGameScreen():
     screen.blit(background, (0, 0))  # draw in the background
 
@@ -47,7 +47,7 @@ def redrawGameScreen():
     write("Score: " + str(int(scoreTracker)), 30, white, 50, 50)
 
 
-# ----- Game Elements -----
+# ---------- Game Elements & Variables ----------
 ground = 300  # y value of the ground
 scoreTracker = 0
 running = True
@@ -63,11 +63,12 @@ background = pygame.transform.scale(pygame.image.load('img/bg.png'), (700, 480))
 white = (255, 255, 255)
 black = (0, 0, 0)
 # sound effects
-jumpSound = pygame.mixer.Sound('jumpSound.wav')
+jumpSound = pygame.mixer.Sound('sound/jumpSound.wav')
 playJumpSound = True
-deathSound = pygame.mixer.Sound('deathSound.wav')
+deathSound = pygame.mixer.Sound('sound/deathSound.wav')
 
-# ----- Main Character -----
+
+# ---------- Main Character ----------
 x = 40  # starting x position
 y = 250  # starting y position
 width = 50
@@ -81,13 +82,13 @@ mudkipAnim = [pygame.transform.scale(pygame.image.load('img/mudkip1.png'), (50, 
 char = pygame.transform.scale(pygame.image.load('img/mudkip1.png'), (50, 50))
 
 
-# ----- Obstacles -----
+# ---------- Obstacles ----------
 # Obstacle class used to generate multiple instances of obstacles
 # Used to set obstacle width, height, x and y positions, and also includes function to draw the obstacle
 class Obstacle:
-    def __init__(self, width, height, groundY):
-        self.width = width
-        self.height = height
+    def __init__(self, obsWidth, obsHeight, groundY):
+        self.width = obsWidth
+        self.height = obsHeight
         self.groundY = groundY
         self.x = 640
 
@@ -111,15 +112,16 @@ obsGraphics = [pygame.transform.scale(pygame.image.load('img/obs1.png'), (35, 23
                pygame.transform.scale(pygame.image.load('img/obs4.png'), (35, 35))]
 obsWidths = [35, 25, 35, 35]
 obsHeights = [23, 14, 27, 35]
+# generates and creates first obstacle of the game
 obsSize = random.randint(0, 3)
 xDiff = random.randint(150, 500)
 newObstacle = Obstacle(obsWidths[obsSize], obsHeights[obsSize], ground)
 obstacle_list.append(newObstacle)
 
 
-# ----- Main Game Loop -----
+# ---------- Main Game Loop ----------
 while running:
-    clock.tick(20)
+    clock.tick(20)  # sets the rate at which the loop runs; used for animating main character
     time = pygame.time.get_ticks()  # get time in milliseconds since pygame.init()
     deltaTime = (time - lastFrame)/1000.0
     lastFrame = time
@@ -136,14 +138,15 @@ while running:
                     xVel = 200
                     scoreTracker = 0
                     obstacle_list = []
-                    xDiff = random.randint(150, 500)
-                    obsSize = random.randint(0, 3)
-                    newObstacle = Obstacle(obsWidths[obsSize], obsHeights[obsSize], ground)
-                    obstacle_list.append(newObstacle)
                     gameOver = False
                     isJump = True
                     gameStart = True
                     playJumpSound = True
+                    # create new "first" obstacle
+                    xDiff = random.randint(150, 500)
+                    obsSize = random.randint(0, 3)
+                    newObstacle = Obstacle(obsWidths[obsSize], obsHeights[obsSize], ground)
+                    obstacle_list.append(newObstacle)
                     break
                 isJump = True
                 gameStart = True  # game starts once user jumps for the first time
@@ -152,6 +155,9 @@ while running:
                 cancelJump = True
                 isJump = False
 
+    # True if player presses up key
+    # Adds downwards acceleration on yVel and changes y coord accordingly
+    # Player can only jump when character is on the ground to prevent mid-air jumps
     if isJump:
         yVel += -1800 * deltaTime
         y -= yVel * deltaTime
@@ -163,6 +169,8 @@ while running:
             jumpSound.play()
             playJumpSound = False
 
+    # True if player presses down key
+    # Adds faster acceleration downwards and changes y coord accordingly
     if cancelJump:
         yVel += -6000 * deltaTime
         y -= yVel * deltaTime
@@ -171,15 +179,19 @@ while running:
             yVel = 650
             y = 250
 
-    if gameStart:  # obstacles start rolling
+    # True if player presses jump key on introScreen or gameOver screen
+    if gameStart:
         playDeathSound = True
         introScreen = False
+        # obstacles begin moving from right to left
         for obs in obstacle_list:
             obs.x -= xVel * deltaTime
+            # collision detection: if player (x,y) overlaps with obstacle (x, y), game is ended
             for i in range(x, x+width):
                 for j in range(int(y), int(y+height)):
                     if i in range(int(obs.x), int(obs.x+obs.width)) and j in range(obs.groundY-obs.height, obs.groundY):
                         gameOver = True
+        # updates score
         scoreTracker += 30 * deltaTime
         # increase speed of obstacles by 2 for every 100 points
         if int(scoreTracker) >= 100 and (int(scoreTracker) % 100) == 0:
@@ -188,22 +200,25 @@ while running:
         if int(scoreTracker) >= 1000 and (int(scoreTracker) % 1000) == 0:
             xVel += 30
             scoreTracker += 1  # prevents xVel from increase multiple times until scoreTracker increases
+        # sound can only play if player is on ground (prevents sound from playing multiple times)
         if y == ground-height:
             playJumpSound = True
 
-    if gameOver:  # if main character hits an obstacle
+    # True if player hits an obstacle
+    if gameOver:
         gameStart = False
-        isJump = False
         cancelJump = False
+        isJump = False
         if playDeathSound:
             deathSound.play()
             playDeathSound = False
         yVel = 0
         xVel = 0
 
+    # Call function to redraw all game elements
     redrawGameScreen()
 
-    # main loop for drawing obstacles
+    # Main loop for drawing obstacles
     for i in range(len(obstacle_list)):
         obs = obstacle_list[i]  # set current obstacle
         # Test if obs is last obstacle
