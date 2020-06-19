@@ -29,10 +29,10 @@ def redrawGameScreen():
         write("Press the space key or up arrow key to jump", 20, black, 80, 170)
         write("and the down arrow key to fall back down.", 20, black, 90, 195)
 
-    # used to animate the mudkip when the game has started
+    # used to animate the character (mudkip) when the game has started
     if gameStart:
         global animCount
-        if animCount + 1 >= 20:
+        if animCount + 1 >= 40:
             animCount = 0
         screen.blit(mudkipAnim[animCount//5], (int(x), int(y)))
         animCount += 1
@@ -40,8 +40,8 @@ def redrawGameScreen():
     # display game over instructions, static character
     if gameOver:
         screen.blit(char, (int(x), int(y)))
-        write("Game Over!", 40, black, 200, 150)
-        write("Jump to restart the game.", 20, black, 175, 200)
+        write("Game Over!", 40, black, 210, 150)
+        write("Jump to restart the game.", 20, black, 185, 200)
 
     # write score to the screen
     write("Score: " + str(int(scoreTracker)), 30, white, 50, 50)
@@ -76,8 +76,12 @@ height = 50
 animCount = 0  # used to animate the main character
 yVel = 650  # initial y velocity of main character for jumping
 mudkipAnim = [pygame.transform.scale(pygame.image.load('img/mudkip1.png'), (50, 50)),
-              pygame.transform.scale(pygame.image.load('img/mudkip2.png'), (50, 50)),
               pygame.transform.scale(pygame.image.load('img/mudkip1.png'), (50, 50)),
+              pygame.transform.scale(pygame.image.load('img/mudkip1.png'), (50, 50)),
+              pygame.transform.scale(pygame.image.load('img/mudkip1.png'), (50, 50)),
+              pygame.transform.scale(pygame.image.load('img/mudkip2.png'), (50, 50)),
+              pygame.transform.scale(pygame.image.load('img/mudkip2.png'), (50, 50)),
+              pygame.transform.scale(pygame.image.load('img/mudkip2.png'), (50, 50)),
               pygame.transform.scale(pygame.image.load('img/mudkip2.png'), (50, 50))]
 char = pygame.transform.scale(pygame.image.load('img/mudkip1.png'), (50, 50))
 
@@ -106,6 +110,7 @@ class Obstacle:
 
 xVel = 200  # starting speed of obstacles
 obstacle_list = []  # maintain a list of all obstacles that are currently on screen (active)
+remove_obs = []
 obsGraphics = [pygame.transform.scale(pygame.image.load('img/obs1.png'), (35, 23)),
                pygame.transform.scale(pygame.image.load('img/obs2.png'), (25, 14)),
                pygame.transform.scale(pygame.image.load('img/obs3.png'), (35, 27)),
@@ -121,7 +126,7 @@ obstacle_list.append(newObstacle)
 
 # ---------- Main Game Loop ----------
 while running:
-    clock.tick(20)  # sets the rate at which the loop runs; used for animating main character
+    clock.tick(100)  # sets the rate at which the loop runs; used for animating main character
     time = pygame.time.get_ticks()  # get time in milliseconds since pygame.init()
     deltaTime = (time - lastFrame)/1000.0
     lastFrame = time
@@ -233,12 +238,15 @@ while running:
                 obstacle_list.append(newObstacle)
                 # Generate a random number for the distance between last obstacle and new obstacle to be generated
                 xDiff = random.randint(150, 500)
-        # If obstacle is off screen, remove it from the list of active obstacles
+        # If obstacle is off screen, add it to a list to have it removed from main list later
         if obs.x < 0-obs.width:
-            obstacle_list.remove(obs)
-            break
+            remove_obs.append(obs)
         else:
             obs.draw()
+    # Remove obstacles in remove_obs from obstacle_list
+    for i in remove_obs:
+        if i in obstacle_list:
+            obstacle_list.remove(i)
 
     # Update the display
     pygame.display.flip()
